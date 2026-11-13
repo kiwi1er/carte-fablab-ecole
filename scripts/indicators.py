@@ -20,3 +20,36 @@ def estimate(classes,teachers):
             'estimatedPupils':c['retained']*PUPILS_PER_CLASS,
             'plannedTrainingParticipantHours':t['retained']*TRAINING_HOURS_PER_TEACHER,
             'plannedSupportParticipantHours':t['retained']*SUPPORT_HOURS_PER_TEACHER}
+
+def observations(source_rows):
+    """Une observation par établissement/année ; réponses répétées non additionnées."""
+    grouped={}
+    for row in source_rows:
+        grouped.setdefault(row.get('Année_scolaire',''),[]).append(row)
+    annual=any(grouped)
+    if annual:grouped.pop('',None)
+    result=[]
+    for year,rows in sorted(grouped.items()):
+        per_program={}
+        for row in rows:per_program.setdefault(row['Dispositif'],[]).append(row)
+        def values(rr):
+            candidates={'classes':[],'teachers':[]};warnings=[]
+            for r in rr:
+                if not year:
+                    # Les statistiques du général présentent des décalages :
+                    # attendre validation plutôt que réinterpréter des effectifs d'élèves.
+                    continue
+                for key,column in [('classes','Classes_impliquées'),('teachers','Personnes_équipe_pédagogique')]:
+                    v=str(r.get(column,'')).strip()
+                    if v.isdigit():
+                        if int(v)==999:
+                            warnings.append('Valeur 999 écartée : effectif à vérifier');continue
+                        candidates[key].append(int(v))
+            classes=candidates['classes'];teachers=candidates['teachers']
+            if len(set(classes))>1 or len(set(teachers))>1:warnings.append('Réponses divergentes : dernière valeur numérique retenue dans le fichier')
+            if any('Réponse commune école/collège' in r.get('Commentaires','') for r in rr):warnings.append('Réponse commune école/collège : attribution des effectifs à confirmer')
+            if not year:warnings.append('Historique sans questionnaire annuel : minimum retenu ; statistiques du général à valider')
+            return {**estimate(classes[-1] if classes else None,teachers[-1] if teachers else None),'warnings':list(dict.fromkeys(warnings))}
+        result.append({'year':year or None,'programs':list(per_program),'counts':values(rows),
+                       'byProgram':{p:values(rr) for p,rr in per_program.items()}})
+    return result

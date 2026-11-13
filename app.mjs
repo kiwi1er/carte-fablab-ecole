@@ -1,4 +1,5 @@
 import {colorFor,coordinate,filterRecords,fromGrist,located,normalize,participationCount} from './lib/model.mjs';
+import {aggregateImpact} from './lib/impact.mjs';
 
 // Adapté du widget Map de gristlabs/grist-widget (Apache-2.0).
 // Mêmes principes : Leaflet, markercluster, marqueur sélectionné et curseur Grist.
@@ -47,6 +48,13 @@ function renderResults(){
  $('results-empty').hidden=state.visible.length>0;$('more').hidden=state.limit>=state.visible.length;$('result-total').textContent=state.visible.length.toLocaleString('fr-FR');
 }
 function closeDetails(){$('details').hidden=true;state.selected=null;drawMarkers();}
+const format=n=>n.toLocaleString('fr-FR');
+function renderImpact(){
+ const annual=$('impact-mode').value==='annual';const total=aggregateImpact(state.visible,filters(),annual?'annual':'school');
+ for(const [id,key] of [['impact-pupils','pupils'],['impact-teachers','teachers'],['impact-training','training'],['impact-support','support']])$(id).textContent=format(total[key]);
+ $('impact-scope').textContent=annual?'Cumul des années renseignées ; bénéficiaires susceptibles d’être comptés plusieurs fois.':'Une estimation par établissement, sur la dernière année renseignée. Ce n’est pas un décompte de bénéficiaires uniques.';
+ $('impact-coverage').textContent=`${format(total.classes)} classes retenues · ${format(total.observations)} observations. Minimum appliqué : ${format(total.classMinimum)} pour les classes, ${format(total.teacherMinimum)} pour les personnes.`+(total.warningObservations?` ${format(total.warningObservations)} observations avec réserve de qualité ou d’attribution.`:'');
+}
 function select(id,focus){
  const r=state.records.find(r=>r.id===id);if(!r)return;state.selected=id;
  for(const rr of state.visible){const m=state.markers.get(rr.id);if(m)m.setIcon(icon(rr));}if(clusters)clusters.refreshClusters();
@@ -56,6 +64,12 @@ function select(id,focus){
  field('Localisation',r.address);field('Première année connue',r.firstYear?String(r.firstYear):'Non renseignée');
  if(r.years.length){d.append(text('p','Participations documentées','detail-label'));const chips=document.createElement('div');chips.className='chips';for(const y of r.years)chips.append(text('span',y,'chip'));d.append(chips);}else field('Historique','Établissement recensé dans le tableau général ; périodes de participation non précisées.');
  field('Dispositif',r.programs.join(' · '));
+ const impact=aggregateImpact([r],filters(),$('impact-mode').value);
+ field('Élèves estimés',`${format(impact.pupils)} (${format(impact.classes)} classes × 22)`);
+ field('Enseignants / équipe pédagogique estimés',format(impact.teachers));
+ field('Formation prévue',`${format(impact.training)} heures-participants`);
+ field('Accompagnement prévu',`${format(impact.support)} heures-participants`);
+ field('Base du calcul',($('impact-mode').value==='annual'?'Cumul des années documentées. ':'Dernière année renseignée, ou minimum historique. ')+`Minimum appliqué pour ${impact.classMinimum} effectif(s) de classes et ${impact.teacherMinimum} effectif(s) de personnes.`+(impact.warningObservations?' Données à vérifier ou attribution des effectifs à confirmer.':''));
  if(!located(r))field('Position sur la carte','Coordonnées à compléter. Cet établissement est recensé dans la liste.');else if(r.precision==='commune')field('Précision','Point approximatif au niveau de la commune.');
  const marker=state.markers.get(id);if(focus&&marker)clusters.zoomToShowLayer(marker,()=>{map.panTo(marker.getLatLng());marker.openPopup();});
  if(state.grist&&r.rowId)state.grist.setCursorPos({rowId:r.rowId}).catch(()=>{});
@@ -66,7 +80,7 @@ function render(){
  const n=state.visible.filter(located).length,missing=state.visible.length-n;
  $('status').textContent=`${n.toLocaleString('fr-FR')} établissement${n===1?'':'s'} sur la carte`+(missing?` · ${missing.toLocaleString('fr-FR')} à localiser`:'');
  if(state.selected&&!state.visible.some(r=>r.id===state.selected)){$('details').hidden=true;state.selected=null;}
- drawMarkers();legend();renderResults();if(state.firstFit&&n){fit();state.firstFit=false;}
+ drawMarkers();legend();renderResults();renderImpact();if(state.selected)select(state.selected,false);if(state.firstFit&&n){fit();state.firstFit=false;}
 }
 function loadRecords(records){state.records=records.map(r=>({...r,latitude:coordinate(r.latitude),longitude:coordinate(r.longitude)}));setupFilters();render();}
 async function connectGrist(){
@@ -74,18 +88,27 @@ async function connectGrist(){
  const script=document.createElement('script');script.src='https://docs.getgrist.com/grist-plugin-api.js';document.head.append(script);
  await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject;});const grist=globalThis.grist;state.grist=grist;
  const optional=true;
- grist.ready({requiredAccess:'read table',allowSelectBy:true,columns:[{name:'Name',title:'Nom'},{name:'Latitude',type:'Numeric'},{name:'Longitude',type:'Numeric'},{name:'Identifier',title:'Identifiant établissement',optional},{name:'City',title:'Commune',optional},{name:'Department',title:'Département',optional},{name:'Region',title:'Région',optional},{name:'Country',title:'Pays',optional},{name:'Address',title:'Adresse cartographie',optional},{name:'FirstYear',title:'Première année connue',optional},{name:'Years',title:'Années scolaires',optional},{name:'Acquisition',title:'Année acquisition',optional},{name:'Programs',title:'Dispositifs',optional},{name:'Precision',title:'Précision localisation',optional},{name:'Participations',title:'Participations JSON',optional}]});
+ grist.ready({requiredAccess:'read table',allowSelectBy:true,columns:[{name:'Name',title:'Nom'},{name:'Latitude',type:'Numeric'},{name:'Longitude',type:'Numeric'},{name:'Identifier',title:'Identifiant établissement',optional},{name:'City',title:'Commune',optional},{name:'Department',title:'Département',optional},{name:'Region',title:'Région',optional},{name:'Country',title:'Pays',optional},{name:'Address',title:'Adresse cartographie',optional},{name:'FirstYear',title:'Première année connue',optional},{name:'Years',title:'Années scolaires',optional},{name:'Acquisition',title:'Année acquisition',optional},{name:'Programs',title:'Dispositifs',optional},{name:'Precision',title:'Précision localisation',optional},{name:'Participations',title:'Participations JSON',optional},{name:'Impact',title:'Indicateurs JSON',optional}]});
  grist.onRecords((records,mappings)=>{const mapped=grist.mapColumnNames(records);if(!mapped&&mappings){$('status').textContent='Complétez les associations de colonnes dans les options du widget.';return;}loadRecords((mapped||records).map(fromGrist));});
  grist.onRecord(record=>{const r=state.records.find(r=>r.rowId===record?.id);if(r&&r.id!==state.selected)select(r.id,true);});
 }
 initializeMap();
 $('filters').addEventListener('submit',e=>e.preventDefault());
 $('search').addEventListener('input',render);
+$('impact-mode').addEventListener('change',()=>{renderImpact();if(state.selected)select(state.selected,false);});
 for(const id of ['region','department','year','program'])$(id).addEventListener('change',()=>{if(id==='region')setupDepartments();render();fit();});
 $('filters').addEventListener('reset',()=>setTimeout(()=>{setupDepartments();render();fit();},0));
 $('more').addEventListener('click',()=>{state.limit+=50;renderResults();});$('fit').addEventListener('click',fit);
 $('fullscreen').addEventListener('click',async()=>{const presenting=document.body.classList.toggle('presentation');$('fullscreen').textContent=presenting?'Quitter la présentation ↙':'Plein écran ↗';if(presenting&&!document.fullscreenElement){try{await document.documentElement.requestFullscreen();}catch{}}else if(document.fullscreenElement){try{await document.exitFullscreen();}catch{}}if(map)setTimeout(()=>map.invalidateSize(),100);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('details').hidden)closeDetails();}});
 try{
- if(mode==='grist')await connectGrist();else{const response=await fetch('./data/public.json',{cache:'no-cache'});if(!response.ok)throw Error('Données indisponibles');const payload=await response.json();loadRecords(payload.records);$('source-label').textContent='Données au '+payload.updated.split('-').reverse().join('/');}
+ if(mode==='grist'){$('local-loader').hidden=true;await connectGrist();}else{
+  loadRecords([]);$('source-label').textContent='Données privées · chargement local';$('status').textContent='Ouvrez votre fichier de données pour afficher la carte.';
+  $('local-data').addEventListener('change',async event=>{
+   const file=event.target.files[0];if(!file)return;
+   try{const payload=JSON.parse(await file.text());if(!payload||!Array.isArray(payload.records)||payload.records.some(r=>!r||typeof r.id!=='string'||typeof r.name!=='string'||!Array.isArray(r.years)||!Array.isArray(r.programs)||!Array.isArray(r.participations)))throw Error('Format invalide');
+    $('local-error').hidden=true;state.firstFit=true;loadRecords(payload.records);$('source-label').textContent='Fichier local · données privées';
+   }catch{loadRecords([]);$('local-error').hidden=false;$('local-error').textContent='Fichier invalide. Choisissez le fichier JSON préparé pour la carte.';$('status').textContent='Aucune donnée chargée.';}
+  });
+ }
 }catch(error){console.error(error);$('status').textContent=mode==='grist'?'Connexion à Grist indisponible. Rechargez le widget.':'Les données n’ont pas pu être chargées. Rechargez la page.';}

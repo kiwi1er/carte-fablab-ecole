@@ -1,5 +1,6 @@
 """Export explicite des seuls champs de cartographie, sans contacts ni commentaires."""
 import argparse,collections,csv,json,pathlib,re,xml.etree.ElementTree as E,zipfile
+from indicators import observations
 N={'m':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 def read_sheet(z,name):
  rel={r.get('Id'):r.get('Target') for r in E.fromstring(z.read('xl/_rels/workbook.xml.rels'))}
@@ -34,6 +35,8 @@ def geography(r,labels):
 def main():
  p=argparse.ArgumentParser();p.add_argument('workbook');p.add_argument('--output',default='data');a=p.parse_args()
  z=zipfile.ZipFile(a.workbook);rows=read_sheet(z,'Etablissements');events=read_sheet(z,'Participations');by=collections.defaultdict(list)
+ sources_by=collections.defaultdict(list)
+ for source in read_sheet(z,'Sources'):sources_by[source['Etablissement_ID']].append(source)
  counts=collections.defaultdict(collections.Counter)
  for r in rows:
   m=re.match(r'^(\d{2,3}|2[AB]) - (.+)$',r['Département'])
@@ -48,11 +51,12 @@ def main():
    except ValueError:return None
   department,region=geography(r,labels)
   records.append(dict(id=r['Etablissement_ID'],name=r['Nom'],city=r['Commune'],department=department,region=region,country=r['Pays'],address=r['Adresse_cartographie'],latitude=number('Latitude'),longitude=number('Longitude'),firstYear=min(first) if first else None,years=parts(r['Années_scolaires']),programs=parts(r['Dispositifs']),participations=by[r['Etablissement_ID']],precision='commune' if 'approximative' in r['Localisation'].lower() else 'adresse',type=r['Type_établissement']))
+  records[-1]['impactObservations']=observations(sources_by[r['Etablissement_ID']])
  out=pathlib.Path(a.output);out.mkdir(parents=True,exist_ok=True)
  payload={'title':"Fablab à l’école",'description':'Les établissements participants, de 2018 à 2027','updated':'2026-11-13','records':records}
  (out/'public.json').write_text(json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
  with (out/'carte-grist.csv').open('w',newline='',encoding='utf-8-sig') as f:
-  keys=['Etablissement_ID','Nom','Commune','Departement','Region','Pays','Adresse_cartographie','Latitude','Longitude','Premiere_annee_connue','Annees_scolaires','Dispositifs','Precision','Participations_JSON'];w=csv.DictWriter(f,fieldnames=keys);w.writeheader()
-  for r in records:w.writerow(dict(zip(keys,[r['id'],r['name'],r['city'],r['department'],r['region'],r['country'],r['address'],r['latitude'],r['longitude'],r['firstYear'],' ; '.join(r['years']),' ; '.join(r['programs']),r['precision'],json.dumps(r['participations'],ensure_ascii=False)])))
+  keys=['Etablissement_ID','Nom','Commune','Departement','Region','Pays','Adresse_cartographie','Latitude','Longitude','Premiere_annee_connue','Annees_scolaires','Dispositifs','Precision','Participations_JSON','Indicateurs_JSON'];w=csv.DictWriter(f,fieldnames=keys);w.writeheader()
+  for r in records:w.writerow(dict(zip(keys,[r['id'],r['name'],r['city'],r['department'],r['region'],r['country'],r['address'],r['latitude'],r['longitude'],r['firstYear'],' ; '.join(r['years']),' ; '.join(r['programs']),r['precision'],json.dumps(r['participations'],ensure_ascii=False),json.dumps(r['impactObservations'],ensure_ascii=False)])))
  print(json.dumps({'records':len(records),'located':sum(r['latitude'] is not None and r['longitude'] is not None for r in records),'participations':sum(len(r['participations']) for r in records)}))
 if __name__=='__main__':main()

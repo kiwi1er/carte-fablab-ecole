@@ -16,6 +16,7 @@
  <main>
   <aside class="sidebar">
    <div class="intro"><span class="eyebrow">EXPLORER LE DISPOSITIF</span><h1>Apprendre en faisant,<br><em>partout sur le territoire.</em></h1><p>Explorez les établissements qui ont participé à Fablab à l’école et retrouvez leur histoire dans le dispositif.</p></div>
+   <section id="local-loader" class="local-loader"><label for="local-data">Ouvrir les données privées sur cet appareil</label><input id="local-data" type="file" accept=".json,application/json"><p>Le fichier est lu dans ce navigateur. Il n’est envoyé ni à GitHub ni à Grist. Le fond de carte nécessite Internet.</p><p id="local-error" role="alert" hidden></p></section>
    <div class="stats" aria-live="polite"><div><strong id="count">—</strong><span>établissements recensés</span></div><div><strong id="participations">—</strong><span>participations annuelles documentées</span></div></div>
    <form id="filters" aria-label="Filtres de la carte">
     <label for="search">Rechercher un établissement ou une ville</label><input id="search" type="search" placeholder="Ex. : Mulhouse, Jean Moulin…" autocomplete="off">
@@ -23,6 +24,19 @@
     <div class="two"><div><label for="year">Année de participation</label><select id="year"><option value="">Toutes les années</option></select></div><div><label for="program">Dispositif</label><select id="program"><option value="">Tous les dispositifs</option></select></div></div>
     <button type="reset" class="reset">Réinitialiser les filtres ↺</button>
    </form>
+   <section class="impact-panel" aria-labelledby="impact-title">
+    <h2 id="impact-title">L’impact estimé du dispositif</h2>
+    <label for="impact-mode">Mode de comptage</label><select id="impact-mode"><option value="school">Une fois par établissement</option><option value="annual">Cumul par année documentée</option></select>
+    <p id="impact-scope" class="impact-note"></p>
+    <div class="impact-grid" aria-live="polite">
+     <div><strong id="impact-pupils">—</strong><span>élèves estimés</span></div>
+     <div><strong id="impact-teachers">—</strong><span>enseignants / équipe pédagogique estimés</span></div>
+     <div><strong id="impact-training">—</strong><span>heures-participants de formation prévues</span></div>
+     <div><strong id="impact-support">—</strong><span>heures-participants d’accompagnement prévues</span></div>
+    </div>
+    <p id="impact-coverage" class="impact-note"></p>
+    <details class="impact-method"><summary>Hypothèses de calcul</summary><p>22 élèves par classe. Au minimum 2 classes et 2 enseignants/personnes de l’équipe pédagogique par établissement. Une valeur absente, 0 ou 1 devient 2 dans l’estimation. Les déclarations d’origine sont conservées.</p><p>6 h de formation et 9 h d’accompagnement prévues par personne. Ce sont des heures-participants, pas des heures de séances réalisées.</p><p>Une fois par établissement : dernière année documentée, ou minimum historique en l’absence de questionnaire. Le cumul annuel peut compter plusieurs fois les mêmes personnes. Plusieurs dispositifs la même année ne sont pas additionnés : une observation par établissement et année, avec la dernière valeur numérique renseignée dans le fichier.</p><p>Les statistiques ambiguës du tableau général et les valeurs « 999 » sont laissées à vérifier et remplacées provisoirement par le minimum. Les réponses communes école/collège restent signalées. Le cumul ne reconstitue pas les années manquantes.</p></details>
+   </section>
    <div class="results-title"><h2>Les établissements</h2><span id="result-total"></span></div>
    <p id="results-empty" hidden>Aucun établissement ne correspond à ces filtres.</p><ul id="results" aria-label="Établissements correspondant aux filtres"></ul>
    <button id="more" class="quiet more" hidden>Afficher les suivants</button>
