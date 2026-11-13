@@ -1,4 +1,4 @@
-import {colorFor,coordinate,filterRecords,fromGrist,located,normalize,participationCount} from './lib/model.mjs';
+import {colorFor,coordinate,filterRecords,fromGrist,located,normalize} from './lib/model.mjs';
 import {aggregateImpact} from './lib/impact.mjs';
 
 // Adapté du widget Map de gristlabs/grist-widget (Apache-2.0).
@@ -52,8 +52,6 @@ const format=n=>n.toLocaleString('fr-FR');
 function renderImpact(){
  const annual=$('impact-mode').value==='annual';const total=aggregateImpact(state.visible,filters(),annual?'annual':'school');
  for(const [id,key] of [['impact-pupils','pupils'],['impact-teachers','teachers'],['impact-training','training'],['impact-support','support']])$(id).textContent=format(total[key]);
- $('impact-scope').textContent=annual?'Cumul des années renseignées ; bénéficiaires susceptibles d’être comptés plusieurs fois.':'Une estimation par établissement, sur la dernière année renseignée. Ce n’est pas un décompte de bénéficiaires uniques.';
- $('impact-coverage').textContent=`${format(total.classes)} classes retenues · ${format(total.observations)} observations. Minimum appliqué : ${format(total.classMinimum)} pour les classes, ${format(total.teacherMinimum)} pour les personnes.`+(total.warningObservations?` ${format(total.warningObservations)} observations avec réserve de qualité ou d’attribution.`:'');
 }
 function select(id,focus){
  const r=state.records.find(r=>r.id===id);if(!r)return;state.selected=id;
@@ -76,7 +74,7 @@ function select(id,focus){
 }
 function render(){
  const f=filters();state.visible=filterRecords(state.records,f).sort((a,b)=>a.name.localeCompare(b.name,'fr'));state.limit=50;
- $('count').textContent=state.visible.length.toLocaleString('fr-FR');$('participations').textContent=participationCount(state.visible,f).toLocaleString('fr-FR');
+ $('count').textContent=state.visible.length.toLocaleString('fr-FR');
  const n=state.visible.filter(located).length,missing=state.visible.length-n;
  $('status').textContent=`${n.toLocaleString('fr-FR')} établissement${n===1?'':'s'} sur la carte`+(missing?` · ${missing.toLocaleString('fr-FR')} à localiser`:'');
  if(state.selected&&!state.visible.some(r=>r.id===state.selected)){$('details').hidden=true;state.selected=null;}
@@ -84,7 +82,7 @@ function render(){
 }
 function loadRecords(records){state.records=records.map(r=>({...r,latitude:coordinate(r.latitude),longitude:coordinate(r.longitude)}));setupFilters();render();}
 async function connectGrist(){
- $('source-label').textContent='Connecté à Grist';$('status').textContent='Associez les colonnes Nom, Latitude et Longitude dans les options du widget.';
+ $('status').textContent='Associez les colonnes Nom, Latitude et Longitude dans les options du widget.';
  const script=document.createElement('script');script.src='https://docs.getgrist.com/grist-plugin-api.js';document.head.append(script);
  await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject;});const grist=globalThis.grist;state.grist=grist;
  const optional=true;
@@ -103,11 +101,11 @@ $('fullscreen').addEventListener('click',async()=>{const presenting=document.bod
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('details').hidden)closeDetails();}});
 try{
  if(mode==='grist'){$('local-loader').hidden=true;await connectGrist();}else{
-  loadRecords([]);$('source-label').textContent='Données privées · chargement local';$('status').textContent='Ouvrez votre fichier de données pour afficher la carte.';
+  loadRecords([]);$('status').textContent='Ouvrez votre fichier de données pour afficher la carte.';
   $('local-data').addEventListener('change',async event=>{
    const file=event.target.files[0];if(!file)return;
    try{const payload=JSON.parse(await file.text());if(!payload||!Array.isArray(payload.records)||payload.records.some(r=>!r||typeof r.id!=='string'||typeof r.name!=='string'||!Array.isArray(r.years)||!Array.isArray(r.programs)||!Array.isArray(r.participations)))throw Error('Format invalide');
-    $('local-error').hidden=true;state.firstFit=true;loadRecords(payload.records);$('source-label').textContent='Fichier local · données privées';
+    $('local-error').hidden=true;state.firstFit=true;loadRecords(payload.records);
    }catch{loadRecords([]);$('local-error').hidden=false;$('local-error').textContent='Fichier invalide. Choisissez le fichier JSON préparé pour la carte.';$('status').textContent='Aucune donnée chargée.';}
   });
  }
