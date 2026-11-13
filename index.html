@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="description" content="Découvrez les établissements participants au dispositif Fablab à l’école, par année et par territoire.">
+ <title>Fablab à l’école · La carte des participations</title>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+ <link rel="stylesheet" href="style.css">
+ <script defer src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+ <script defer src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+ <script type="module" src="app.mjs"></script>
+</head>
+<body>
+ <header class="topbar"><a class="brand" href="./" aria-label="Accueil de la carte"><span class="brand-icon" aria-hidden="true">✳</span><span>Fablab <em>à l’école</em></span></a><span class="top-label">UN RÉSEAU D’ÉTABLISSEMENTS, DES IDÉES EN COMMUN</span><button id="fullscreen" class="quiet">Plein écran ↗</button></header>
+ <main>
+  <aside class="sidebar">
+   <div class="intro"><span class="eyebrow">EXPLORER LE DISPOSITIF</span><h1>Apprendre en faisant,<br><em>partout sur le territoire.</em></h1><p>Explorez les établissements qui ont participé à Fablab à l’école et retrouvez leur histoire dans le dispositif.</p></div>
+   <div class="stats" aria-live="polite"><div><strong id="count">—</strong><span>établissements recensés</span></div><div><strong id="participations">—</strong><span>participations annuelles documentées</span></div></div>
+   <form id="filters" aria-label="Filtres de la carte">
+    <label for="search">Rechercher un établissement ou une ville</label><input id="search" type="search" placeholder="Ex. : Mulhouse, Jean Moulin…" autocomplete="off">
+    <div class="two"><div><label for="region">Région</label><select id="region"><option value="">Toutes les régions</option></select></div><div><label for="department">Département</label><select id="department"><option value="">Tous</option></select></div></div>
+    <div class="two"><div><label for="year">Année de participation</label><select id="year"><option value="">Toutes les années</option></select></div><div><label for="program">Dispositif</label><select id="program"><option value="">Tous les dispositifs</option></select></div></div>
+    <button type="reset" class="reset">Réinitialiser les filtres ↺</button>
+   </form>
+   <div class="results-title"><h2>Les établissements</h2><span id="result-total"></span></div>
+   <p id="results-empty" hidden>Aucun établissement ne correspond à ces filtres.</p><ul id="results" aria-label="Établissements correspondant aux filtres"></ul>
+   <button id="more" class="quiet more" hidden>Afficher les suivants</button>
+   <footer class="sidebar-footer">Une présence plusieurs années peut correspondre à un prêt prolongé. La carte conserve l’historique connu.</footer>
+  </aside>
+  <section class="map-section" aria-label="Carte des établissements">
+   <div id="map" aria-label="Carte interactive"></div>
+   <div class="map-heading"><span class="live-dot"></span><strong>La carte des participations</strong><span id="source-label">Chargement…</span></div>
+   <button id="fit" class="fit">Voir tous les points ⤢</button>
+   <div id="status" class="status" role="status">Chargement de la carte…</div>
+   <div id="details" class="details" hidden aria-label="Détails de l’établissement"></div>
+   <div class="legend"><h2>Première année connue</h2><div id="legend-years"></div><p>La couleur indique la première année connue.<br>Le filtre porte sur les participations annuelles documentées.</p></div>
+  </section>
+ </main>
+ <noscript>Activez JavaScript pour afficher la carte interactive.</noscript>
+</body>
+</html>
