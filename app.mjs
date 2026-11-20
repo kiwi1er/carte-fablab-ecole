@@ -6,7 +6,7 @@ import {aggregateImpact} from './lib/impact.mjs';
 const $=id=>document.getElementById(id);
 const mode=new URLSearchParams(location.search).get('mode')==='grist'?'grist':'public';
 const state={records:[],visible:[],markers:new Map(),selected:null,limit:50,firstFit:true,grist:null};
-let map,clusters;let customColors={};
+let map,clusters;let customColors={};let initialGristRecord=true;
 try{customColors=JSON.parse(localStorage.getItem('fablab-colors')||'{}');}catch{}
 const color=y=>/^#[0-9a-f]{6}$/i.test(customColors[y])?customColors[y]:colorFor(y);
 const text=(tag,value,cls)=>{const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;};
@@ -29,6 +29,7 @@ function initializeMap(){
  clusters=L.markerClusterGroup({maxClusterRadius:35,animate:false,animateAddingMarkers:false,removeOutsideVisibleBounds:false,showCoverageOnHover:false,spiderfyOnMaxZoom:true,clusterPane:'clusters',iconCreateFunction:clusterIcon}).addTo(map);
  new ResizeObserver(()=>map.invalidateSize({pan:false,animate:false})).observe($('map'));
 }
+function showHexagon(){if(!map)return;map.stop();map.invalidateSize({pan:false,animate:false});map.fitBounds([[42.25,-5.25],[51.15,8.3]],{padding:[18,18],animate:false});}
 function fit(){if(!map)return;const points=state.visible.filter(located).map(r=>[r.latitude,r.longitude]);if(points.length){map.stop();map.invalidateSize({pan:false,animate:false});map.fitBounds(points,{padding:[65,90],maxZoom:13,animate:false});}else map.setView([46.6,2.4],6);}
 function drawMarkers(){
  if(!map)return;map.removeLayer(clusters);clusters.clearLayers();state.markers.clear();const markers=[];
@@ -79,7 +80,7 @@ function render(){
  const n=state.visible.filter(located).length,missing=state.visible.length-n;
  $('status').textContent=`${n.toLocaleString('fr-FR')} établissement${n===1?'':'s'} sur la carte`+(missing?` · ${missing.toLocaleString('fr-FR')} à localiser`:'');
  if(state.selected&&!state.visible.some(r=>r.id===state.selected)){$('details').hidden=true;state.selected=null;}
- drawMarkers();legend();renderResults();renderImpact();if(state.selected)select(state.selected,false);if(state.firstFit&&n){fit();state.firstFit=false;}
+ drawMarkers();legend();renderResults();renderImpact();if(state.selected)select(state.selected,false);if(state.firstFit&&n){showHexagon();state.firstFit=false;}
 }
 function loadRecords(records){state.records=records.map(r=>({...r,latitude:coordinate(r.latitude),longitude:coordinate(r.longitude)}));setupFilters();render();}
 async function connectGrist(){
@@ -89,14 +90,14 @@ async function connectGrist(){
  const optional=true;
  grist.ready({requiredAccess:'read table',allowSelectBy:true,columns:[{name:'Name',title:'Nom'},{name:'Latitude',type:'Numeric'},{name:'Longitude',type:'Numeric'},{name:'Identifier',title:'Identifiant établissement',optional},{name:'City',title:'Commune',optional},{name:'Department',title:'Département',optional},{name:'Region',title:'Région',optional},{name:'Country',title:'Pays',optional},{name:'Address',title:'Adresse cartographie',optional},{name:'FirstYear',title:'Première année connue',optional},{name:'Years',title:'Années scolaires',optional},{name:'Acquisition',title:'Année acquisition',optional},{name:'Programs',title:'Dispositifs',optional},{name:'Precision',title:'Précision localisation',optional},{name:'Participations',title:'Participations JSON',optional},{name:'Impact',title:'Indicateurs JSON',optional}]});
  grist.onRecords((records,mappings)=>{const mapped=grist.mapColumnNames(records);if(!mapped&&mappings){$('status').textContent='Complétez les associations de colonnes dans les options du widget.';return;}loadRecords((mapped||records).map(fromGrist));});
- grist.onRecord(record=>{const r=state.records.find(r=>r.rowId===record?.id);if(r&&r.id!==state.selected)select(r.id,true);});
+ grist.onRecord(record=>{if(initialGristRecord){initialGristRecord=false;return;}const r=state.records.find(r=>r.rowId===record?.id);if(r&&r.id!==state.selected)select(r.id,false);});
 }
 initializeMap();
 $('filters').addEventListener('submit',e=>e.preventDefault());
 $('search').addEventListener('input',render);
 $('impact-mode').addEventListener('change',()=>{renderImpact();if(state.selected)select(state.selected,false);});
 for(const id of ['region','department','year','program'])$(id).addEventListener('change',()=>{if(id==='region')setupDepartments();render();fit();});
-$('filters').addEventListener('reset',()=>setTimeout(()=>{setupDepartments();render();fit();},0));
+$('filters').addEventListener('reset',()=>setTimeout(()=>{setupDepartments();render();showHexagon();},0));
 $('more').addEventListener('click',()=>{state.limit+=50;renderResults();});$('fit').addEventListener('click',fit);
 $('fullscreen').addEventListener('click',async()=>{const presenting=document.body.classList.toggle('presentation');$('fullscreen').textContent=presenting?'Quitter la présentation ↙':'Plein écran ↗';if(presenting&&!document.fullscreenElement){try{await document.documentElement.requestFullscreen();}catch{}}else if(document.fullscreenElement){try{await document.exitFullscreen();}catch{}}if(map)setTimeout(()=>map.invalidateSize(),100);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('details').hidden)closeDetails();}});
