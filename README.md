@@ -1,5 +1,13 @@
 # Carte Fablab à l’école
 
+## Hypothèses d'effectifs validées
+
+Le calcul retient au minimum **2 classes** et **2 enseignants/personnes de l'équipe pédagogique** par observation : une valeur absente, nulle ou égale à 1 est remplacée par 2 dans l'indicateur, sans modifier la déclaration. Les valeurs entières renseignées à partir de 2 sont conservées. La règle constitue une hypothèse de calcul fondée sur les critères de prêt indiqués par le porteur du projet, pas une vérification des effectifs réels.
+
+Hypothèses communes : **22 élèves par classe**, **6 heures-participants de formation prévues** et **9 heures-participants d'accompagnement prévues** par enseignant/personne retenue. Le champ équipe pédagogique reste identifié lorsqu'il sert de substitut au nombre d'enseignants.
+
+`python3 scripts/prepare_indicators.py /chemin/base.xlsx` prépare `data/indicateurs-sources.csv` avec déclaration, valeur retenue et origine de l'estimation pour chaque observation. **Ce fichier n'est pas additionnable directement** : il contient des réponses répétées et des années différentes. Les indicateurs ne sont pas encore raccordés aux compteurs de la carte ; l'agrégation par établissement/année et les questionnaires communs école/collège doivent être traités avant un bilan national. Les données sources, y compris leurs anomalies signalées dans le classeur, sont conservées.
+
 Widget Grist et carte publique adaptée du widget Map de Grist (Leaflet et MarkerCluster), sous licence Apache-2.0. Origine et version dans [NOTICE](NOTICE), code initial dans `upstream/`.
 
 ## Première version
