@@ -63,10 +63,10 @@ function select(id,focus){
  if(r.years.length){d.append(text('p','Participations documentées','detail-label'));const chips=document.createElement('div');chips.className='chips';for(const y of r.years)chips.append(text('span',y,'chip'));d.append(chips);}else field('Historique','Établissement recensé dans le tableau général ; périodes de participation non précisées.');
  field('Dispositif',r.programs.join(' · '));
  const impact=aggregateImpact([r],filters(),$('impact-mode').value);
- field('Élèves estimés',`${format(impact.pupils)} (${format(impact.classes)} classes × 22)`);
- field('Enseignants / équipe pédagogique estimés',format(impact.teachers));
- field('Formation prévue',`${format(impact.training)} heures-participants`);
- field('Accompagnement prévu',`${format(impact.support)} heures-participants`);
+ field('Élèves',`${format(impact.pupils)} (${format(impact.classes)} classes × 22)`);
+ field('Enseignants / équipe pédagogique',format(impact.teachers));
+ field('Formation',`${format(impact.training)} heures-participants`);
+ field('Accompagnement',`${format(impact.support)} heures-participants`);
  field('Base du calcul',($('impact-mode').value==='annual'?'Cumul des années documentées. ':'Dernière année renseignée, ou minimum historique. ')+`Minimum appliqué pour ${impact.classMinimum} effectif(s) de classes et ${impact.teacherMinimum} effectif(s) de personnes.`+(impact.warningObservations?' Données à vérifier ou attribution des effectifs à confirmer.':''));
  if(!located(r))field('Position sur la carte','Coordonnées à compléter. Cet établissement est recensé dans la liste.');else if(r.precision==='commune')field('Précision','Point approximatif au niveau de la commune.');
  const marker=state.markers.get(id);if(focus&&marker)clusters.zoomToShowLayer(marker,()=>{map.panTo(marker.getLatLng());marker.openPopup();});
