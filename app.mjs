@@ -26,17 +26,18 @@ function initializeMap(){
  map=L.map('map',{wheelPxPerZoomLevel:90}).setView([46.6,2.4],6);
  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}).addTo(map);
  map.createPane('clusters').style.zIndex=610;map.createPane('otherMarkers').style.zIndex=600;
- clusters=L.markerClusterGroup({maxClusterRadius:35,showCoverageOnHover:false,spiderfyOnMaxZoom:true,clusterPane:'clusters',iconCreateFunction:clusterIcon}).addTo(map);
- new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+ clusters=L.markerClusterGroup({maxClusterRadius:35,animate:false,animateAddingMarkers:false,removeOutsideVisibleBounds:false,showCoverageOnHover:false,spiderfyOnMaxZoom:true,clusterPane:'clusters',iconCreateFunction:clusterIcon}).addTo(map);
+ new ResizeObserver(()=>map.invalidateSize({pan:false,animate:false})).observe($('map'));
 }
-function fit(){if(!map)return;const points=state.visible.filter(located).map(r=>[r.latitude,r.longitude]);if(points.length)map.fitBounds(points,{padding:[65,90],maxZoom:13});else map.setView([46.6,2.4],6);}
+function fit(){if(!map)return;const points=state.visible.filter(located).map(r=>[r.latitude,r.longitude]);if(points.length){map.stop();map.invalidateSize({pan:false,animate:false});map.fitBounds(points,{padding:[65,90],maxZoom:13,animate:false});}else map.setView([46.6,2.4],6);}
 function drawMarkers(){
- if(!map)return;clusters.clearLayers();state.markers.clear();
+ if(!map)return;map.removeLayer(clusters);clusters.clearLayers();state.markers.clear();const markers=[];
  for(const r of state.visible.filter(located)){
   const marker=L.marker([r.latitude,r.longitude],{title:r.name,icon:icon(r),pane:'otherMarkers'});
   const popup=text('div',r.name);marker.bindPopup(popup);marker.on('click',()=>select(r.id,false));
-  state.markers.set(r.id,marker);clusters.addLayer(marker);
+  state.markers.set(r.id,marker);markers.push(marker);
  }
+ clusters.addLayers(markers);map.addLayer(clusters);
 }
 function legend(){
  const box=$('legend-years');box.replaceChildren();const years=[...new Set(state.visible.map(r=>r.firstYear))].sort((a,b)=>(a??9999)-(b??9999));
