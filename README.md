@@ -1,85 +1,61 @@
 # Carte Fablab à l’école
 
-## Hypothèses d'effectifs validées
+Widget Grist et carte de présentation adaptés du widget Map de Grist (Leaflet et MarkerCluster). Licence Apache-2.0 ; origine dans NOTICE, code initial dans upstream/.
 
-Le calcul retient au minimum **2 classes** et **2 enseignants/personnes de l'équipe pédagogique** par observation : une valeur absente, nulle ou égale à 1 est remplacée par 2 dans l'indicateur, sans modifier la déclaration. Les valeurs entières renseignées à partir de 2 sont conservées. La règle constitue une hypothèse de calcul fondée sur les critères de prêt indiqués par le porteur du projet, pas une vérification des effectifs réels.
+## Données privées
 
-Hypothèses communes : **22 élèves par classe**, **6 heures-participants de formation prévues** et **9 heures-participants d'accompagnement prévues** par enseignant/personne retenue. Le champ équipe pédagogique reste identifié lorsqu'il sert de substitut au nombre d'enseignants.
+**Ce dépôt publie uniquement le code.** Les JSON, CSV et Excel de recensement restent sur l’ordinateur ou dans Grist. Les fichiers de données précédemment publiés sont retirés de la branche courante ; ils peuvent subsister dans l’historique Git et ses copies. Ce changement ne réécrit pas l’historique.
 
-`python3 scripts/prepare_indicators.py /chemin/base.xlsx` prépare `data/indicateurs-sources.csv` avec déclaration, valeur retenue et origine de l'estimation pour chaque observation. **Ce fichier n'est pas additionnable directement** : il contient des réponses répétées et des années différentes. Les indicateurs ne sont pas encore raccordés aux compteurs de la carte ; l'agrégation par établissement/année et les questionnaires communs école/collège doivent être traités avant un bilan national. Les données sources, y compris leurs anomalies signalées dans le classeur, sont conservées.
+La page de présentation permet de sélectionner un JSON local via File.text(). Son contenu n’est envoyé à aucun serveur et n’est pas conservé entre deux ouvertures. Les bibliothèques jsDelivr et le fond OpenStreetMap nécessitent Internet ; les requêtes de tuiles reflètent la zone affichée. Le partage de l’URL seule ne partage pas les données. Une carte publique préchargée nécessitera une décision explicite sur les données à publier.
 
-Widget Grist et carte publique adaptée du widget Map de Grist (Leaflet et MarkerCluster), sous licence Apache-2.0. Origine et version dans [NOTICE](NOTICE), code initial dans `upstream/`.
+## Tester et utiliser
 
-## Première version
+Activer **Settings → Pages → Deploy from a branch → main → /(root) → Save**.
 
-- 577 établissements recensés, 438 participations annuelles documentées.
-- 43 établissements avec coordonnées ; les 534 autres restent dans la liste avec la mention « Coordonnées à compléter ».
-- Filtres région, département, année scolaire, dispositif ; recherche sans accents.
-- Couleurs par première année connue, modifiables dans la légende et conservées dans ce navigateur.
-- Carte regroupée, fiches au clic et mode présentation.
-- Vue publique sans compte et mode widget Grist en lecture seule.
+- Présentation avec chargement local : https://kiwi1er.github.io/carte-fablab-ecole/
+- Widget connecté à Grist : https://kiwi1er.github.io/carte-fablab-ecole/?mode=grist
 
-La première année connue est le minimum des années d’acquisition et des années scolaires documentées. L’année d’ajout à l’ancienne carte n’est pas utilisée comme année d’entrée. Les périodes de prêt non renseignées ne sont pas inventées. Les compteurs distinguent établissements et participations. Une même année pour deux dispositifs peut donner deux participations.
+La présentation propose recherche, filtres région/département/année/dispositif, couleurs par première année connue, regroupement des points, fiches et mode présentation avec compteurs. Les établissements sans coordonnées restent dans la liste et les compteurs. La couleur utilise la première acquisition ou participation connue, jamais l’année d’ajout à l’ancienne carte.
 
-## Activer GitHub Pages
+## Calculs
 
-Dans le dépôt : **Settings → Pages → Build and deployment → Source: Deploy from a branch → main → /(root) → Save**.
+Minimum : **2 classes et 2 enseignants/personnes de l’équipe pédagogique**, si la déclaration est absente, 0 ou 1. Les valeurs à partir de 2 sont conservées. Élèves estimés = classes × **22** ; formation prévue = personnes × **6 h** ; accompagnement prévu = personnes × **9 h**. Les heures sont des heures-participants prévues et ne prouvent pas une réalisation.
 
-Après déploiement :
+**Une fois par établissement** utilise la dernière année renseignée, ou le minimum historique. **Cumul par année documentée** compte une observation par établissement et année, plus une observation historique pour ceux sans questionnaire ; il ne reconstitue pas les années manquantes et peut compter plusieurs fois les mêmes bénéficiaires. Plusieurs dispositifs la même année ne sont pas additionnés ; le filtre dispositif utilise ses propres effectifs.
 
-- Carte publique : `https://kiwi1er.github.io/carte-fablab-ecole/`
-- Widget Grist : `https://kiwi1er.github.io/carte-fablab-ecole/?mode=grist`
+Les réponses répétées sont départagées par la dernière valeur numérique du fichier, sans addition, et les divergences sont signalées. Les valeurs 999 et les colonnes statistiques ambiguës du général restent à valider et sont remplacées provisoirement par le minimum. Les réponses communes école/collège portent une réserve d’attribution. Les déclarations d’origine sont conservées et le nombre de minima appliqués est affiché. L’équipe pédagogique n’est pas nécessairement constituée uniquement d’enseignants.
 
-```html
-<iframe src="https://kiwi1er.github.io/carte-fablab-ecole/"
-        title="Carte Fablab à l’école" width="100%" height="850"
-        style="border:0" allow="fullscreen" loading="lazy"></iframe>
-```
-
-## Installer dans Grist
-
-La table du document cible était vide lors de la préparation. Deux possibilités :
-
-1. Importer la base Excel complète pour le suivi détaillé, ou importer `data/carte-grist.csv` comme table de présentation autonome (577 lignes, coordonnées et historique JSON inclus).
-2. Ajouter une vue **Personnalisée**, choisir cette table et l’URL du widget ci-dessus.
-3. Donner l’accès **Lire la table sélectionnée**, puis associer les colonnes.
-
-| Champ du widget | CSV de présentation | Excel complet |
-|---|---|---|
-| Nom | Nom | Nom |
-| Latitude / Longitude | Latitude / Longitude | Latitude / Longitude |
-| Identifiant établissement | Etablissement_ID | Etablissement_ID |
-| Commune | Commune | Commune |
-| Département | Departement | Département |
-| Région | Region | Région |
-| Pays | Pays | Pays |
-| Adresse cartographie | Adresse_cartographie | Adresse_cartographie |
-| Première année connue | Premiere_annee_connue | à calculer / facultatif |
-| Année acquisition | facultatif | Année_acquisition |
-| Années scolaires | Annees_scolaires | Années_scolaires |
-| Dispositifs | Dispositifs | Dispositifs |
-| Précision localisation | Precision | Localisation |
-| Participations JSON | Participations_JSON | à préparer depuis Participations |
-
-`Latitude`, `Longitude` et `Premiere_annee_connue` : nombres. `Participations_JSON` : texte, sans conversion en liste de choix. Les années et dispositifs acceptent du texte séparé par ` ; ` ou une liste de choix Grist.
-
-Le compteur des participations et le croisement année/dispositif nécessitent **Participations_JSON**. Le CSV de présentation est donc le chemin le plus simple pour une installation complète de cette première version. Dans la base Excel complète, les données restent dans deux tables ; un champ de présentation doit les agréger avant l’association au widget.
-
-Le widget ne réalise pas encore de géocodage. Compléter les coordonnées dans Grist ou dans la base, puis actualiser l’export public.
-
-## Publication et mises à jour
-
-Le mode public charge uniquement `data/public.json`. Il ne se connecte pas à Grist et ne contient aucune clé API, adresse courriel, contact ou commentaire interne. Le mode Grist lit la table sélectionnée via l’API des widgets et suit ses modifications. Modifier Grist ne met **pas** à jour automatiquement la carte publique.
-
-Pour publier une nouvelle base consolidée, exécuter :
+## Préparer les fichiers sur l’ordinateur
 
 ```sh
-python3 scripts/export_public.py /chemin/Fablab_base_consolidee_2026_2027.xlsx
-node --test tests/model.test.mjs
+python3 scripts/export_public.py /chemin/base_consolidee.xlsx
+node --test tests/*.test.mjs
+python3 -m unittest discover -s tests -p test_indicators.py
+python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Vérifier et enregistrer les fichiers `data/` dans GitHub. Le script utilise une liste explicite des seuls champs publics. Les noms de régions sont harmonisés à partir du département, confronté au code postal français lorsqu’il est disponible ; le classeur source n’est pas modifié. La synchronisation depuis Grist sera une prochaine étape.
+Le script génère localement `data/public.json` à sélectionner dans la carte et `data/carte-grist.csv` pour l’import dans Grist. Malgré son nom historique, public.json **n’est pas publié**. Les JSON et CSV de data/ sont exclus de Git. Le script utilise une liste explicite des champs nécessaires, sans courriels, contacts ni commentaires internes. Les régions sont harmonisées par département et code postal français disponible ; le classeur original reste intact.
 
-Pour vérifier localement : `python3 -m http.server 8765 --bind 127.0.0.1`, puis ouvrir `http://127.0.0.1:8765/`.
+Les tests du corpus privé s’exécutent uniquement en présence du JSON local. Les tests des règles et des filtres fonctionnent sans données privées.
 
-Le fond de carte nécessite une connexion Internet (tuiles OpenStreetMap). Les bibliothèques sont chargées depuis jsDelivr, avec leurs versions fixées. Les établissements sans coordonnées restent recensés, mais ne sont pas représentés par un faux point à 0,0.
+## Intégrer ensuite dans Grist
+
+Importer le CSV dans le document privé. Ajouter une vue Personnalisée connectée à la table, URL du widget avec `?mode=grist`, accès **Lire la table sélectionnée**.
+
+| Champ du widget | Colonne CSV |
+|---|---|
+| Nom | Nom |
+| Latitude / Longitude | Latitude / Longitude |
+| Identifiant établissement | Etablissement_ID |
+| Commune | Commune |
+| Département / Région | Departement / Region |
+| Pays | Pays |
+| Adresse cartographie | Adresse_cartographie |
+| Première année connue | Premiere_annee_connue |
+| Années scolaires | Annees_scolaires |
+| Dispositifs | Dispositifs |
+| Précision localisation | Precision |
+| Participations JSON | Participations_JSON |
+| Indicateurs JSON | Indicateurs_JSON |
+
+Latitude, Longitude et Premiere_annee_connue : nombres. Les colonnes JSON : texte. Sans Indicateurs_JSON, les compteurs utilisent les minima. Sans Participations_JSON, le compteur annuel et l’intersection année/dispositif n’ont pas l’historique détaillé. Le widget ne réalise pas encore le géocodage et ne publie aucune modification de Grist.
