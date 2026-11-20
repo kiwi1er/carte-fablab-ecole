@@ -1,0 +1,9 @@
+Carte Fablab à l’école
+
+Le moteur de carte et le regroupement des marqueurs sont adaptés du widget Map de gristlabs/grist-widget, sous licence Apache-2.0.
+Source : https://github.com/gristlabs/grist-widget/tree/master/map
+Version de page.js examinée : 970397967b2313c3381e5e12f94004ec4b62ebdf (SHA du fichier).
+Les fichiers d’origine sont conservés dans upstream/. Les adaptations portent sur les filtres, couleurs, interface, données publiques et connexion à Grist.
+
+Bibliothèques chargées : Leaflet (BSD-2-Clause), Leaflet.markercluster (MIT).
+Fond de carte : © OpenStreetMap contributors, https://www.openstreetmap.org/copyright.
